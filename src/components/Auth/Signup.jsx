@@ -47,7 +47,7 @@ const Signup = () => {
                     email: formData.email,
                     password: formData.password,
                     role: formData.role === 'parent' ? 'Student' :
-                        formData.role === 'teacher' ? 'Teacher' :
+                        formData.role === 'instructor' ? 'Instructor' :
                             formData.role === 'student' ? 'Grader' : ''
                 })
             });
@@ -119,7 +119,7 @@ const Signup = () => {
                         required
                     >
                         <MenuItem value="parent">Student</MenuItem>
-                        <MenuItem value="teacher">Teacher</MenuItem>
+                        <MenuItem value="instructor">Instructor</MenuItem>
                         <MenuItem value="student">Grader</MenuItem>
                     </Select>
                 </FormControl>

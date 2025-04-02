@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Box,
     Typography,
@@ -6,7 +6,9 @@ import {
     Divider,
     Card,
     CardContent,
-    Button
+    Button,
+    CircularProgress,
+    Alert
 } from '@mui/material';
 import Navbar from '../Navbar/Navbar';
 import { useAuth } from '../../context/AuthContext';
@@ -14,13 +16,11 @@ import { useAuth } from '../../context/AuthContext';
 const Home = () => {
     const { user } = useAuth();
     const role = user?.role || 'student';
+    const [courses, setCourses] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    // Sample data
-    const courses = [
-        { id: 1, title: 'Introduction to React', description: 'Learn React fundamentals' },
-        { id: 2, title: 'Advanced JavaScript', description: 'Master modern JS patterns' }
-    ];
-
+    // Sample data for other sections
     const deadlines = [
         { id: 1, title: 'Project 1', course: 'React', dueDate: '2025-04-05' },
         { id: 2, title: 'Quiz 2', course: 'JavaScript', dueDate: '2025-04-07' }
@@ -35,9 +35,42 @@ const Home = () => {
         { id: 2, title: 'Quiz 1', course: 'JavaScript', student: 'Jane Smith' }
     ];
 
+    useEffect(() => {
+        const fetchCourses = async () => {
+            try {
+                const authData = JSON.parse(localStorage.getItem('auth'));
+                if (!authData?.token) {
+                    throw new Error('Authentication required');
+                }
+
+                const response = await fetch('http://localhost:9001/api/auth/fetchcoursesbyuserid', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authData.token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch courses');
+                }
+
+                const data = await response.json();
+                setCourses(data);
+            } catch (err) {
+                console.error('Error fetching courses:', err);
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchCourses();
+    }, []);
+
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-            <Navbar showInstructorOptions={role === 'instructor'} />
+            <Navbar showInstructorOptions={role === 'Instructor'} />
 
             {/* Main Content */}
             <Box sx={{
@@ -54,18 +87,32 @@ const Home = () => {
                     <Typography variant="h4" gutterBottom>
                         My Courses
                     </Typography>
-                    {courses.map((course) => (
-                        <Card key={course.id} sx={{ mb: 2 }}>
-                            <CardContent>
-                                <Typography variant="h5" component="div">
-                                    {course.title}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                    {course.description}
-                                </Typography>
-                            </CardContent>
-                        </Card>
-                    ))}
+
+                    {loading ? (
+                        <Box display="flex" justifyContent="center">
+                            <CircularProgress />
+                        </Box>
+                    ) : error ? (
+                        <Alert severity="error">{error}</Alert>
+                    ) : courses.length === 0 ? (
+                        <Typography>No courses found</Typography>
+                    ) : (
+                        courses.map((course) => (
+                            <Card key={course.courseid} sx={{ mb: 2 }}>
+                                <CardContent>
+                                    <Typography variant="h5" component="div">
+                                        {course.coursename}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {new Date(course.startdate).toLocaleDateString()} - {new Date(course.enddate).toLocaleDateString()}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Status: {course.isarchived ? 'Archived' : 'Active'}
+                                    </Typography>
+                                </CardContent>
+                            </Card>
+                        ))
+                    )}
                 </Box>
 
                 {/* Middle Section - Deadlines */}

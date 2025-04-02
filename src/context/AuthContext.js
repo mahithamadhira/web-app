@@ -3,32 +3,46 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-    const [token, setToken] = useState(localStorage.getItem('token') || null);
+    const [authState, setAuthState] = useState(() => {
+        // Initialize from localStorage if available
+        const storedAuth = localStorage.getItem('auth');
+        return storedAuth ? JSON.parse(storedAuth) : {
+            token: null,
+            user: null,
+            isAuthenticated: false
+        };
+    });
 
-    useEffect(() => {
-        if (token) {
-            localStorage.setItem('token', token);
-        } else {
-            localStorage.removeItem('token');
-        }
-    }, [token]);
+    const login = async (userData) => {
+        const newAuthState = {
+            token: userData.token,
+            user: {
+                username: userData.username,
+                email: userData.email,
+                role: userData.role
+            },
+            isAuthenticated: true
+        };
 
-    const login = (newToken) => {
-        setToken(newToken);
+        // Update both state and localStorage
+        setAuthState(newAuthState);
+        localStorage.setItem('auth', JSON.stringify(newAuthState));
     };
 
     const logout = () => {
-        setToken(null);
+        setAuthState({ token: null, user: null, isAuthenticated: false });
+        localStorage.removeItem('auth');
     };
 
     return (
-        <AuthContext.Provider value={{ token, login, logout }}>
+        <AuthContext.Provider value={{
+            ...authState,
+            login,
+            logout
+        }}>
             {children}
         </AuthContext.Provider>
     );
 };
 
-// Custom hook to use the auth context
-export const useAuth = () => {
-    return useContext(AuthContext);
-};
+export const useAuth = () => useContext(AuthContext);

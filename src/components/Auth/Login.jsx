@@ -1,5 +1,12 @@
 import React from 'react';
-import { Button, Divider, Stack, TextField, Typography } from '@mui/material';
+import {
+    Button,
+    Divider,
+    Stack,
+    TextField,
+    Typography,
+    Alert
+} from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import AuthLayout from './AuthLayout';
 import { useAuth } from '../../context/AuthContext';
@@ -12,6 +19,7 @@ const Login = () => {
         password: ''
     });
     const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const [error, setError] = React.useState('');
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -19,11 +27,13 @@ const Login = () => {
             ...prev,
             [name]: value
         }));
+        if (error) setError('');
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
+        setError('');
 
         try {
             const response = await fetch('http://localhost:9001/api/auth/login', {
@@ -37,15 +47,25 @@ const Login = () => {
                 })
             });
 
+            const data = await response.json();
+
             if (!response.ok) {
-                throw new Error('Login failed');
+                throw new Error(data.message || 'Login failed');
             }
 
-            const data = await response.json();
-            login(data.token); // Store the token
-            navigate('/home'); // Redirect to home page
+            // This now properly updates both context and localStorage
+            await login({
+                token: data.token,
+                username: data.username,
+                email: data.email,
+                role: data.role
+            });
+
+            navigate('/home', { replace: true });
+
         } catch (error) {
             console.error('Login error:', error);
+            setError(error.message || 'Incorrect email or password');
         } finally {
             setIsSubmitting(false);
         }

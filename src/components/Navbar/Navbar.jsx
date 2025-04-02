@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
 
 const Navbar = ({ showInstructorOptions }) => {
     const { user, logout } = useAuth();
+    console.log("user: ", user)
     const navigate = useNavigate();
     const [anchorEl, setAnchorEl] = React.useState(null);
 
